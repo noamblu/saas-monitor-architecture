@@ -8,7 +8,7 @@ The system triggers a health check against a SaaS API (mocked in this project) o
 
 ```mermaid
 graph TD
-    Scheduler[EventBridge Scheduler] -->|Trigger (5m)| SQS_Trigger["SQS: monitor-queue"]
+    Scheduler[EventBridge Scheduler] -->|Trigger 5m| SQS_Trigger[SQS monitor-queue]
     SQS_Trigger --> Pipe[EventBridge Pipe]
     Pipe -->|Enrichment| APIDest[API Destination]
     APIDest -->|HTTP Request| MockSaaS[Mock SaaS Lambda]
@@ -17,7 +17,7 @@ graph TD
     Processor -->|PutEvents| Bus[Event Bus]
     Bus -->|Rule| Targets
     Targets -->|Log| CWLogs[CloudWatch Logs]
-    Targets -->|Queue| SQS_Omnibus["SQS: update-omnibus"]
+    Targets -->|Queue| SQS_Omnibus[SQS update-omnibus]
 ```
 
 ## Features
