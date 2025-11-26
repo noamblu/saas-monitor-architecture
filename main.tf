@@ -143,6 +143,7 @@ module "processor_lambda" {
 
   environment_variables = {
     EVENT_BUS_NAME = module.eventbridge.bus_name
+    SAAS_NAME      = var.saas_name
   }
 
   additional_policies = [

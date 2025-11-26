@@ -18,15 +18,22 @@ def lambda_handler(event, context):
     logger.info(json.dumps(event, indent=2))
     
     bus_name = os.environ.get('EVENT_BUS_NAME', 'default')
+    saas_name = os.environ.get('SAAS_NAME', 'unknown-saas')
 
     # 1. Send event to EventBridge Custom Bus
     try:
+        # Wrap the original event with the SaaS name
+        detail_payload = {
+            'saas_name': saas_name,
+            'data': event
+        }
+        
         events_response = events_client.put_events(
             Entries=[
                 {
                     'Source': 'com.saas.monitor',
                     'DetailType': 'SaaS Health Check',
-                    'Detail': json.dumps(event),
+                    'Detail': json.dumps(detail_payload),
                     'EventBusName': bus_name
                 }
             ]
@@ -46,8 +53,8 @@ def lambda_handler(event, context):
                     'MetricName': 'SaaSHealthCheck',
                     'Dimensions': [
                         {
-                            'Name': 'Service',
-                            'Value': 'MockSaaS'
+                            'Name': 'SaaS',
+                            'Value': saas_name
                         },
                     ],
                     'Timestamp': datetime.datetime.now(),
