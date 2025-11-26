@@ -73,8 +73,14 @@ variable "oauth_config" {
 # --- Processor Configuration ---
 
 variable "processor_source_path" {
-  description = "Path to the processor Lambda source file (e.g., user provided receiver)"
+  description = "Path to the processor Lambda source code (Python file). Defaults to src/processor/processor.py"
   type        = string
   default     = null # Will default to local path in main.tf if null, or we can set default here.
   # Setting default here is cleaner for the blueprint.
+}
+
+variable "event_bus_name" {
+  description = "Name of the external EventBridge Bus to send events to"
+  type        = string
+  default     = "ops-main-cust-bus"
 }
