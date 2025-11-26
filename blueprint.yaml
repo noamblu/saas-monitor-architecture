@@ -1,0 +1,97 @@
+name: SaaS-Monitor-Architecture
+version: 1.1.0
+description: >-
+  A modular SaaS monitoring architecture using AWS EventBridge Pipes, Scheduler,
+  Lambda, and SQS. It triggers a mock SaaS API check on a schedule, processes
+  the response using a user-provided receiver (Lambda), and routes events to 
+  CloudWatch Logs and an omnibus SQS queue. Supports API Key, Basic, and OAuth.
+
+inputs:
+  aws_region:
+    type: string
+    description: AWS Region to deploy resources
+    default: eu-central-1
+  aws_profile:
+    type: string
+    description: AWS Profile to use for authentication
+    default: sandbox
+  saas_name:
+    type: string
+    description: The name of the SaaS application
+    default: noam-saas
+  
+  # Authentication
+  auth_type:
+    type: string
+    description: "Authentication type: API_KEY, BASIC, OAUTH, or NONE"
+    default: API_KEY
+  api_key_config:
+    type: object
+    description: |
+      Configuration for API_KEY auth.
+      Fields:
+        - key: (string) The API key header name
+        - value: (string) The API key value
+    sensitive: true
+  basic_auth_config:
+    type: object
+    description: |
+      Configuration for BASIC auth.
+      Fields:
+        - username: (string)
+        - password: (string)
+    sensitive: true
+  oauth_config:
+    type: object
+    description: |
+      Configuration for OAUTH auth.
+      Fields:
+        - authorization_endpoint: (string) URL to get the token
+        - http_method: (string) GET or POST
+        - client_parameters:
+            - client_id: (string)
+            - client_secret: (string)
+        - oauth_http_parameters: (optional)
+            - header: List of {key, value, is_value_secret}
+            - body: List of {key, value, is_value_secret}
+            - query_string: List of {key, value, is_value_secret}
+    sensitive: true
+
+  # Processor / Receiver
+  processor_source_path:
+    type: string
+    description: Path to the processor Lambda source file (Receiver)
+    default: null
+
+architecture:
+  modules:
+    - name: monitor_queue
+      type: sqs
+      description: Queue to buffer schedule triggers
+    - name: update_omnibus
+      type: sqs
+      description: Queue to receive processed events (omnibus)
+    - name: monitor_schedule
+      type: scheduler
+      description: EventBridge Scheduler triggering every 5 minutes
+    - name: mock_saas_lambda
+      type: lambda
+      description: Mock SaaS API with Function URL
+    - name: processor_lambda
+      type: lambda
+      description: User-provided Receiver Lambda (processes API responses)
+    - name: eventbridge
+      type: eventbridge
+      description: Custom Event Bus, Rules, and CloudWatch Log Group
+    - name: api_destination
+      type: api-destination
+      description: EventBridge Connection and API Destination for SaaS API
+    - name: monitor_pipe
+      type: pipe
+      description: EventBridge Pipe connecting SQS -> API Dest -> Lambda
+
+outputs:
+  mock_saas_url:
+    description: The public URL of the Mock SaaS Lambda
+  processor_lambda_arn:
+    description: The ARN of the Processor Lambda
