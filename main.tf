@@ -79,27 +79,6 @@ module "monitor_queue" {
   name   = "${var.saas_name}-queue"
 }
 
-module "update_omnibus" {
-  source = "./modules/sqs"
-  name   = "update-omnibus"
-
-  # Policy to allow EventBridge to send messages
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect    = "Allow"
-      Principal = { Service = "events.amazonaws.com" }
-      Action    = "sqs:SendMessage"
-      Resource  = "arn:aws:sqs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:update-omnibus"
-      Condition = {
-        ArnEquals = {
-          "aws:SourceArn" = module.eventbridge.bus_arn # Ideally rule ARN, but bus ARN is safer if rule name changes
-        }
-      }
-    }]
-  })
-}
-
 module "monitor_schedule" {
   source              = "./modules/scheduler"
   name                = "${var.saas_name}-schedule"
@@ -117,23 +96,6 @@ module "mock_saas_lambda" {
   create_url  = true
 }
 
-module "eventbridge" {
-  source         = "./modules/eventbridge"
-  bus_name       = "ops-main-cust-bus"
-  log_group_name = "/aws/events/${var.saas_name}-events"
-
-  rules = {
-    "${var.saas_name}-log-all" = {
-      description   = "Log all SaaS events"
-      event_pattern = jsonencode({ source = ["com.saas.monitor"] })
-      targets = [
-        { arn = "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/events/${var.saas_name}-events" }, # Self-reference workaround or use output
-        { arn = module.update_omnibus.arn }
-      ]
-    }
-  }
-}
-
 module "processor_lambda" {
   source = "./modules/lambda"
   name   = "${var.saas_name}-processor"
@@ -142,8 +104,8 @@ module "processor_lambda" {
   handler     = "processor.lambda_handler"
 
   environment_variables = {
-    EVENT_BUS_NAME = module.eventbridge.bus_name
     SAAS_NAME      = var.saas_name
+    EVENT_BUS_NAME = var.event_bus_name
   }
 
   additional_policies = [
@@ -153,7 +115,7 @@ module "processor_lambda" {
         {
           Effect   = "Allow"
           Action   = ["events:PutEvents"]
-          Resource = module.eventbridge.bus_arn
+          Resource = "arn:aws:events:${var.aws_region}:${data.aws_caller_identity.current.account_id}:event-bus/${var.event_bus_name}"
         },
         {
           Effect   = "Allow"

@@ -4,7 +4,7 @@ This project deploys a modular, serverless SaaS monitoring architecture on AWS u
 
 ## Architecture
 
-The system triggers a health check against a SaaS API (mocked in this project) on a schedule, processes the response, and routes the results to downstream targets.
+The system triggers a health check against a SaaS API (mocked in this project) on a schedule, processes the response using a user-provided receiver (Lambda).
 
 ```mermaid
 graph TD
@@ -14,10 +14,6 @@ graph TD
     APIDest -->|HTTP Request| MockSaaS[Mock SaaS Lambda]
     MockSaaS -->|Response| Pipe
     Pipe -->|Target| Processor[Processor Lambda]
-    Processor -->|PutEvents| Bus[Event Bus]
-    Bus -->|Rule| Targets
-    Targets -->|Log| CWLogs[CloudWatch Logs]
-    Targets -->|Queue| SQS_Omnibus[SQS update-omnibus]
 ```
 
 ## Features
@@ -56,19 +52,6 @@ You can configure the deployment using the following variables in `variables.tf`
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `aws_region` | AWS Region to deploy resources | `eu-central-1` |
-| `saas_name` | Name prefix for resources | `noam-saas` |
-| `auth_type` | Authentication type (`API_KEY`, `BASIC`, `OAUTH`, `NONE`) | `API_KEY` |
-| `api_key_config` | Configuration for API Key auth | `{ key = "x-api-secret", value = "..." }` |
-| `basic_auth_config` | Configuration for Basic auth | `null` |
-| `oauth_config` | Configuration for OAuth | `null` |
-| `processor_source_path` | Path to custom processor Lambda code | `src/processor/processor.py` |
-
-## Modules
-
-The project is organized into the following modules in `modules/`:
-
-- **`api-destination`**: Manages EventBridge Connection and API Destination.
 - **`eventbridge`**: Manages Event Bus, Rules, Targets, and Log Groups.
 - **`lambda`**: Deploys Lambda functions with IAM roles and optional Function URLs.
 - **`pipe`**: Deploys EventBridge Pipes.
