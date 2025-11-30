@@ -4,8 +4,15 @@ variable "name" {
 }
 
 variable "source_file" {
-  description = "Path to the source file"
+  description = "Path to the source file (mutually exclusive with source_dir)"
   type        = string
+  default     = null
+}
+
+variable "source_dir" {
+  description = "Path to the source directory (mutually exclusive with source_file)"
+  type        = string
+  default     = null
 }
 
 variable "handler" {

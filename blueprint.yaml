@@ -30,47 +30,59 @@ inputs:
       Configuration for API_KEY auth.
       Fields:
         - key: (string) The API key header name
-        - value: (string) The API key value
+name: SaaS-Monitor-Architecture
+version: 1.1.0
+description: >-
+  A modular SaaS monitoring architecture using AWS EventBridge Pipes, Scheduler,
+  Lambda, and SQS. It triggers a mock SaaS API check on a schedule, processes
+  the response using a user-provided receiver (Lambda).
+
+inputs:
+  aws_region:
+    type: string
+    default: "eu-central-1"
+  saas_name:
+    type: string
+    default: "noam-saas"
+  target_url:
+    type: string
+    default: "https://api.example.com/health"
+  event_bus_name:
+    type: string
+    default: "ops-main-cust-bus"
+  auth_type:
+    type: string
+    default: "API_KEY"
+    options: ["API_KEY", "BASIC", "OAUTH", "NONE"]
+  api_key_config:
+    type: object
     sensitive: true
   basic_auth_config:
     type: object
-    description: |
-      Configuration for BASIC auth.
-      Fields:
-        - username: (string)
-        - password: (string)
     sensitive: true
   oauth_config:
     type: object
-    description: |
-      Configuration for OAUTH auth.
-      Fields:
-        - authorization_endpoint: (string) URL to get the token
-        - http_method: (string) GET or POST
-        - client_parameters:
-            - client_id: (string)
-            - client_secret: (string)
-        - oauth_http_parameters: (optional)
-            - header: List of {key, value, is_value_secret}
-            - body: List of {key, value, is_value_secret}
+    sensitive: true
+
+architecture:
+  modules:
+    - name: saas_poller_lambda
+      type: lambda
+      description: "Lambda that polls data from SaaS API and puts events to EventBridge"
     - name: monitor_schedule
       type: scheduler
-      description: EventBridge Scheduler triggering every 5 minutes
-    - name: mock_saas_lambda
-      type: lambda
-      description: Mock SaaS API with Function URL
-    - name: processor_lambda
-      type: lambda
-      description: User-provided Receiver Lambda (processes API responses)
+      description: "EventBridge Scheduler to trigger the poller"
     - name: api_destination
       type: api-destination
-      description: EventBridge Connection and API Destination for SaaS API
-    - name: monitor_pipe
-      type: pipe
-      description: EventBridge Pipe connecting SQS -> API Dest -> Lambda
+      description: "API Destination and Connection for SaaS API"
+    - name: mock_saas_lambda
+      type: lambda
+      description: "Mock SaaS API (for testing)"
 
 outputs:
+  saas_poller_lambda_arn:
+    description: "ARN of the SaaS Poller Lambda"
+  api_destination_arn:
+    description: "ARN of the API Destination"
   mock_saas_url:
-    description: The public URL of the Mock SaaS Lambda
-  processor_lambda_arn:
-    description: The ARN of the Processor Lambda
+    description: "URL of the Mock SaaS API"

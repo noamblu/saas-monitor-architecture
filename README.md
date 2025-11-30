@@ -1,63 +1,19 @@
-# SaaS Monitor Architecture
-
-This project deploys a modular, serverless SaaS monitoring architecture on AWS using Terraform. It leverages EventBridge Pipes, Scheduler, Lambda, and SQS to create a robust, event-driven monitoring solution.
-
-## Architecture
-
-The system triggers a health check against a SaaS API (mocked in this project) on a schedule, processes the response using a user-provided receiver (Lambda).
-
-```mermaid
-graph TD
-    Scheduler[EventBridge Scheduler] -->|Trigger 5m| SQS_Trigger[SQS monitor-queue]
-    SQS_Trigger --> Pipe[EventBridge Pipe]
-    Pipe -->|Enrichment| APIDest[API Destination]
-    APIDest -->|HTTP Request| MockSaaS[Mock SaaS Lambda]
-    MockSaaS -->|Response| Pipe
-    Pipe -->|Target| Processor[Processor Lambda]
-```
-
-## Features
-
-- **Modular Design**: Built with reusable Terraform modules for Lambda, SQS, Scheduler, Pipes, and EventBridge.
-- **Flexible Authentication**: Supports API Key, Basic Auth, and OAuth for the API Destination.
-- **Customizable Receiver**: The processor Lambda can be replaced with your own logic via a source path variable.
-- **Event-Driven**: Fully asynchronous processing using SQS and EventBridge.
-- **Blueprint Ready**: Includes a `blueprint.yaml` manifest for easy cataloging.
-
-## Prerequisites
-
-- [Terraform](https://www.terraform.io/downloads.html) >= 1.0
-- [AWS CLI](https://aws.amazon.com/cli/) configured with appropriate credentials.
-
-## Usage
-
-1.  **Initialize Terraform**:
-    ```bash
-    terraform init
-    ```
-
-2.  **Review the Plan**:
-    ```bash
-    terraform plan
-    ```
-
-3.  **Deploy**:
-    ```bash
-    terraform apply
-    ```
-
-## Configuration
-
 You can configure the deployment using the following variables in `variables.tf` or a `terraform.tfvars` file.
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-- **`eventbridge`**: Manages Event Bus, Rules, Targets, and Log Groups.
-- **`lambda`**: Deploys Lambda functions with IAM roles and optional Function URLs.
-- **`pipe`**: Deploys EventBridge Pipes.
-- **`scheduler`**: Deploys EventBridge Schedules.
-- **`sqs`**: Deploys SQS queues and policies.
+```mermaid
+graph LR
+    Scheduler[EventBridge Scheduler] -->|Trigger| Poller[SaaS Poller Lambda]
+    Poller -->|Get Auth| APIDest[API Destination]
+    Poller -->|Invoke| SaaS[SaaS API]
+    Poller -->|PutEvents| Bus[External Event Bus]
+```
 
-## Blueprint
-
-This project includes a `blueprint.yaml` file that describes the architecture, inputs, and outputs in a machine-readable format, suitable for integration with blueprint catalogs or platform engineering tools.
+1.  **EventBridge Scheduler**: Triggers the SaaS Poller Lambda every 5 minutes.
+2.  **SaaS Poller Lambda**:
+    *   Retrieves API Destination details and authentication.
+    *   Invokes the SaaS API (or the **Mock SaaS Lambda** for testing).
+    *   Parses the response.
+    *   Sends events to the **External Event Bus**.
+re, inputs, and outputs in a machine-readable format, suitable for integration with blueprint catalogs or platform engineering tools.

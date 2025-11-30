@@ -72,11 +72,10 @@ variable "oauth_config" {
 
 # --- Processor Configuration ---
 
-variable "processor_source_path" {
-  description = "Path to the processor Lambda source code (Python file). Defaults to src/processor/processor.py"
+variable "target_url" {
+  description = "The URL of the SaaS API to monitor"
   type        = string
-  default     = null # Will default to local path in main.tf if null, or we can set default here.
-  # Setting default here is cleaner for the blueprint.
+  default     = "https://api.example.com/health" # Placeholder
 }
 
 variable "event_bus_name" {
