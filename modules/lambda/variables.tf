@@ -56,8 +56,3 @@ variable "security_group_ids" {
   default     = []
 }
 
-variable "use_vpc" {
-  description = "Enable/disable VPC attachment"
-  type        = bool
-  default     = true
-}

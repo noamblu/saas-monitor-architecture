@@ -35,8 +35,9 @@ resource "aws_iam_role_policy_attachment" "scheduler_attach" {
 
 # --- VPC Security Group ---
 
+# --- VPC Security Group ---
+
 resource "aws_security_group" "lambda_sg" {
-  count       = var.use_vpc ? 1 : 0
   name        = "${var.saas_name}-lambda-sg"
   description = "Security group for Lambda functions"
   vpc_id      = var.vpc_id
@@ -57,9 +58,8 @@ module "saas_poller_lambda" {
   source_dir = "${path.module}/src/saas_poller"
   handler    = "saas_poller.handler"
 
-  use_vpc            = var.use_vpc
-  subnet_ids         = var.use_vpc ? var.private_subnet_ids : []
-  security_group_ids = var.use_vpc ? [aws_security_group.lambda_sg[0].id] : []
+  subnet_ids         = var.private_subnet_ids
+  security_group_ids = [aws_security_group.lambda_sg.id]
 
   environment_variables = {
     API_DESTINATION_NAME = module.api_destination.name
@@ -119,9 +119,8 @@ module "mock_saas_lambda" {
   handler     = "mock_saas.handler"
   create_url  = true
 
-  use_vpc            = var.use_vpc
-  subnet_ids         = var.use_vpc ? var.private_subnet_ids : []
-  security_group_ids = var.use_vpc ? [aws_security_group.lambda_sg[0].id] : []
+  subnet_ids         = var.private_subnet_ids
+  security_group_ids = [aws_security_group.lambda_sg.id]
 }
 
 data "aws_caller_identity" "current" {}

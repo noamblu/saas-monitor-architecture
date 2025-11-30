@@ -32,6 +32,38 @@ architecture:
       type: lambda
       description: "Lambda that polls data from SaaS API and puts events to EventBridge"
     - name: monitor_schedule
+name: SaaS-Monitor-Architecture
+version: 1.1.0
+description: >-
+  A modular SaaS monitoring architecture using AWS EventBridge Pipes, Scheduler,
+  Lambda, and SQS. It triggers a mock SaaS API check on a schedule, processes
+  the response using a user-provided receiver (Lambda).
+
+inputs:
+  aws_region:
+    type: string
+  api_key_config:
+    type: object
+    description: |
+      Configuration for API_KEY auth.
+      Fields:
+        - key: (string) The API key header name
+  oauth_config:
+    type: object
+    sensitive: true
+  vpc_id:
+    type: string
+    description: "ID of the VPC to use"
+  private_subnet_ids:
+    type: list(string)
+    description: "List of private subnet IDs for Lambda"
+
+architecture:
+  modules:
+    - name: saas_poller_lambda
+      type: lambda
+      description: "Lambda that polls data from SaaS API and puts events to EventBridge"
+    - name: monitor_schedule
       type: scheduler
       description: "EventBridge Scheduler to trigger the poller"
     - name: api_destination

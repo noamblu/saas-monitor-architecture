@@ -15,5 +15,5 @@ output "mock_saas_url" {
 
 output "lambda_security_group_id" {
   description = "The ID of the Security Group created for Lambda functions"
-  value       = var.use_vpc ? aws_security_group.lambda_sg[0].id : null
+  value       = aws_security_group.lambda_sg.id
 }

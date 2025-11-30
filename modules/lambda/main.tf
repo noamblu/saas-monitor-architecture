@@ -51,17 +51,13 @@ resource "aws_lambda_function" "this" {
     variables = var.environment_variables
   }
 
-  dynamic "vpc_config" {
-    for_each = var.use_vpc ? [1] : []
-    content {
-      subnet_ids         = var.subnet_ids
-      security_group_ids = var.security_group_ids
-    }
+  vpc_config {
+    subnet_ids         = var.subnet_ids
+    security_group_ids = var.security_group_ids
   }
 }
 
 resource "aws_iam_role_policy_attachment" "vpc_access" {
-  count      = var.use_vpc ? 1 : 0
   role       = aws_iam_role.this.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
 }
