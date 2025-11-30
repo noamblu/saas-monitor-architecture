@@ -8,22 +8,6 @@ description: >-
 inputs:
   aws_region:
     type: string
-    description: AWS Region to deploy resources
-    default: eu-central-1
-  aws_profile:
-    type: string
-    description: AWS Profile to use for authentication
-    default: sandbox
-  saas_name:
-    type: string
-    description: The name of the SaaS application
-    default: noam-saas
-  
-  # Authentication
-  auth_type:
-    type: string
-    description: "Authentication type: API_KEY, BASIC, OAUTH, or NONE"
-    default: API_KEY
   api_key_config:
     type: object
     description: |
@@ -38,28 +22,6 @@ description: >-
   the response using a user-provided receiver (Lambda).
 
 inputs:
-  aws_region:
-    type: string
-    default: "eu-central-1"
-  saas_name:
-    type: string
-    default: "noam-saas"
-  target_url:
-    type: string
-    default: "https://api.example.com/health"
-  event_bus_name:
-    type: string
-    default: "ops-main-cust-bus"
-  auth_type:
-    type: string
-    default: "API_KEY"
-    options: ["API_KEY", "BASIC", "OAUTH", "NONE"]
-  api_key_config:
-    type: object
-    sensitive: true
-  basic_auth_config:
-    type: object
-    sensitive: true
   oauth_config:
     type: object
     sensitive: true

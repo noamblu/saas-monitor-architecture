@@ -43,3 +43,21 @@ variable "additional_policies" {
   type        = list(string)
   default     = []
 }
+
+variable "subnet_ids" {
+  description = "List of subnet IDs for VPC configuration"
+  type        = list(string)
+  default     = []
+}
+
+variable "security_group_ids" {
+  description = "List of security group IDs for VPC configuration"
+  type        = list(string)
+  default     = []
+}
+
+variable "use_vpc" {
+  description = "Enable/disable VPC attachment"
+  type        = bool
+  default     = true
+}

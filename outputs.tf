@@ -9,6 +9,11 @@ output "api_destination_arn" {
 }
 
 output "mock_saas_url" {
-  description = "The public URL of the Mock SaaS Lambda (for testing)"
+  description = "The URL of the Mock SaaS API"
   value       = module.mock_saas_lambda.function_url
+}
+
+output "lambda_security_group_id" {
+  description = "The ID of the Security Group created for Lambda functions"
+  value       = var.use_vpc ? aws_security_group.lambda_sg[0].id : null
 }

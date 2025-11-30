@@ -33,6 +33,22 @@ resource "aws_iam_role_policy_attachment" "scheduler_attach" {
   policy_arn = aws_iam_policy.scheduler_policy.arn
 }
 
+# --- VPC Security Group ---
+
+resource "aws_security_group" "lambda_sg" {
+  count       = var.use_vpc ? 1 : 0
+  name        = "${var.saas_name}-lambda-sg"
+  description = "Security group for Lambda functions"
+  vpc_id      = var.vpc_id
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
 # --- Modules ---
 
 module "saas_poller_lambda" {
@@ -40,6 +56,10 @@ module "saas_poller_lambda" {
   name       = "${var.saas_name}-saas-poller"
   source_dir = "${path.module}/src/saas_poller"
   handler    = "saas_poller.handler"
+
+  use_vpc            = var.use_vpc
+  subnet_ids         = var.use_vpc ? var.private_subnet_ids : []
+  security_group_ids = var.use_vpc ? [aws_security_group.lambda_sg[0].id] : []
 
   environment_variables = {
     API_DESTINATION_NAME = module.api_destination.name
@@ -81,14 +101,6 @@ module "monitor_schedule" {
   input               = jsonencode({}) # No specific input needed for fetcher, or could pass overrides
 }
 
-module "mock_saas_lambda" {
-  source      = "./modules/lambda"
-  name        = "${var.saas_name}-mock-api"
-  source_file = "${path.module}/src/mock_saas/mock_saas.py"
-  handler     = "mock_saas.lambda_handler"
-  create_url  = true
-}
-
 module "api_destination" {
   source              = "./modules/api-destination"
   name                = var.saas_name
@@ -98,6 +110,18 @@ module "api_destination" {
   api_key    = var.api_key_config
   basic_auth = var.basic_auth_config
   oauth      = var.oauth_config
+}
+
+module "mock_saas_lambda" {
+  source      = "./modules/lambda"
+  name        = "${var.saas_name}-mock"
+  source_file = "${path.module}/src/mock_saas/mock_saas.py"
+  handler     = "mock_saas.handler"
+  create_url  = true
+
+  use_vpc            = var.use_vpc
+  subnet_ids         = var.use_vpc ? var.private_subnet_ids : []
+  security_group_ids = var.use_vpc ? [aws_security_group.lambda_sg[0].id] : []
 }
 
 data "aws_caller_identity" "current" {}

@@ -83,3 +83,24 @@ variable "event_bus_name" {
   type        = string
   default     = "ops-main-cust-bus"
 }
+
+# --- VPC Configuration ---
+
+variable "vpc_id" {
+  description = "ID of the VPC to use"
+  type        = string
+  default     = ""
+}
+
+variable "private_subnet_ids" {
+  description = "List of private subnet IDs for Lambda and other resources"
+  type        = list(string)
+  default     = []
+}
+
+
+variable "use_vpc" {
+  description = "Enable/disable VPC attachment"
+  type        = bool
+  default     = true
+}
