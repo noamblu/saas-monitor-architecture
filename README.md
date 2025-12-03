@@ -56,6 +56,36 @@ graph LR
         value = "my-secret-key"
       }
     }
+
+    # Example: Basic Auth
+    # auth_config = {
+    #   mode = "BASIC"
+    #   basic = {
+    #     username = "my-user"
+    #     password = "my-password"
+    #   }
+    # }
+
+    # Example: OAuth (Client Credentials)
+    # auth_config = {
+    #   mode = "OAUTH"
+    #   oauth = {
+    #     authorization_endpoint = "https://auth.example.com/token"
+    #     http_method            = "POST"
+    #     client_parameters = {
+    #       client_id     = "my-client-id"
+    #       client_secret = "my-client-secret"
+    #     }
+    #     oauth_http_parameters = {
+    #       body = [{ key = "audience", value = "my-audience" }]
+    #     }
+    #   }
+    # }
+    
+    # Example: No Auth
+    # auth_config = {
+    #   mode = "NONE"
+    # }
     ```
 
 4.  **Deploy**:
