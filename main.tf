@@ -4,6 +4,7 @@ module "security_group" {
   source = "./modules/security-group"
   name   = "${var.saas_name}-lambda-sg"
   vpc_id = data.aws_vpc.selected.id
+  tags   = var.tags
 
   egress_rules = [
     {
@@ -20,11 +21,13 @@ module "api_destination" {
   name                = var.api_destination_name != null ? var.api_destination_name : var.saas_name
   invocation_endpoint = var.target_url
   auth_config         = var.auth_config
+  tags                = var.tags
 }
 
 module "event_bus" {
   source   = "./modules/event-bridge-bus"
   bus_name = "custom-${var.saas_name}-event-bus"
+  tags     = var.tags
 
   archive = {
     name           = "${var.saas_name}-event-archive"
@@ -55,6 +58,7 @@ module "event_bus" {
 # IAM Role for Event Bus to invoke target (kept here as it's specific glue, or could be in a generic IAM module)
 resource "aws_iam_role" "event_bus_invoke_role" {
   name = "${var.saas_name}-eb-invoke-role"
+  tags = var.tags
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -70,6 +74,7 @@ resource "aws_iam_role" "event_bus_invoke_role" {
 
 resource "aws_iam_policy" "event_bus_invoke_policy" {
   name = "${var.saas_name}-eb-invoke-policy"
+  tags = var.tags
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
@@ -89,6 +94,7 @@ module "schema_registry" {
   source        = "./modules/schema-registry"
   registry_name = "${var.saas_name}-registry"
   description   = "Registry for ${var.saas_name} events"
+  tags          = var.tags
 
   schemas = {
     "saas-${var.saas_name}-event-schema" = {
@@ -113,6 +119,7 @@ module "schema_registry" {
 module "saas_poller_lambda" {
   source = "./modules/lambda"
   name   = "${var.saas_name}-saas-poller"
+  tags   = var.tags
 
   source_config = {
     type = "dir"
@@ -161,6 +168,7 @@ module "saas_poller_lambda" {
 # IAM Role for Scheduler (glue logic)
 resource "aws_iam_role" "scheduler_role" {
   name = "${var.saas_name}-scheduler-role"
+  tags = var.tags
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
@@ -173,6 +181,7 @@ resource "aws_iam_role" "scheduler_role" {
 
 resource "aws_iam_policy" "scheduler_policy" {
   name = "${var.saas_name}-scheduler-policy"
+  tags = var.tags
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
@@ -192,6 +201,7 @@ module "monitor_schedule" {
   source              = "./modules/scheduler"
   name                = "${var.saas_name}-schedule"
   schedule_expression = "rate(5 minutes)"
+  tags                = var.tags
 
   target_config = {
     arn      = module.saas_poller_lambda.arn

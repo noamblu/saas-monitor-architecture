@@ -75,3 +75,12 @@ variable "connection_name" {
   default     = null
 }
 
+variable "tags" {
+  description = "Tags to assign to resources"
+  type        = map(string)
+  default = {
+    Project     = "SaaS-Monitor"
+    ManagedBy   = "Terraform"
+    Environment = "Sandbox"
+  }
+}
