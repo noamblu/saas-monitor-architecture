@@ -1,29 +1,26 @@
 resource "aws_cloudwatch_event_connection" "this" {
-  name               = "${var.name}-connection"
-  authorization_type = var.auth_type
+  name               = var.name
+  authorization_type = var.auth_config.mode == "OAUTH" ? "OAUTH_CLIENT_CREDENTIALS" : var.auth_config.mode
 
   auth_parameters {
-    # API Key
     dynamic "api_key" {
-      for_each = var.auth_type == "API_KEY" && var.api_key != null ? [var.api_key] : []
+      for_each = var.auth_config.mode == "API_KEY" ? [var.auth_config.api_key] : []
       content {
         key   = api_key.value.key
         value = api_key.value.value
       }
     }
 
-    # Basic Auth
     dynamic "basic" {
-      for_each = var.auth_type == "BASIC" && var.basic_auth != null ? [var.basic_auth] : []
+      for_each = var.auth_config.mode == "BASIC" ? [var.auth_config.basic] : []
       content {
         username = basic.value.username
         password = basic.value.password
       }
     }
 
-    # OAuth
     dynamic "oauth" {
-      for_each = var.auth_type == "OAUTH" && var.oauth != null ? [var.oauth] : []
+      for_each = var.auth_config.mode == "OAUTH" ? [var.auth_config.oauth] : []
       content {
         authorization_endpoint = oauth.value.authorization_endpoint
         http_method            = oauth.value.http_method
@@ -36,7 +33,6 @@ resource "aws_cloudwatch_event_connection" "this" {
         dynamic "oauth_http_parameters" {
           for_each = oauth.value.oauth_http_parameters != null ? [oauth.value.oauth_http_parameters] : []
           content {
-            # Header Parameters
             dynamic "header" {
               for_each = oauth_http_parameters.value.header != null ? oauth_http_parameters.value.header : []
               content {
@@ -45,8 +41,6 @@ resource "aws_cloudwatch_event_connection" "this" {
                 is_value_secret = header.value.is_value_secret
               }
             }
-
-            # Body Parameters
             dynamic "body" {
               for_each = oauth_http_parameters.value.body != null ? oauth_http_parameters.value.body : []
               content {
@@ -55,8 +49,6 @@ resource "aws_cloudwatch_event_connection" "this" {
                 is_value_secret = body.value.is_value_secret
               }
             }
-
-            # Query String Parameters
             dynamic "query_string" {
               for_each = oauth_http_parameters.value.query_string != null ? oauth_http_parameters.value.query_string : []
               content {
@@ -73,8 +65,8 @@ resource "aws_cloudwatch_event_connection" "this" {
 }
 
 resource "aws_cloudwatch_event_api_destination" "this" {
-  name                = "${var.name}-destination"
+  name                = var.name
+  connection_arn      = aws_cloudwatch_event_connection.this.arn
   invocation_endpoint = var.invocation_endpoint
   http_method         = var.http_method
-  connection_arn      = aws_cloudwatch_event_connection.this.arn
 }

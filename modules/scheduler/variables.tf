@@ -8,18 +8,28 @@ variable "schedule_expression" {
   type        = string
 }
 
-variable "target_arn" {
-  description = "ARN of the target"
-  type        = string
+variable "target_config" {
+  description = "Configuration for the target"
+  type = object({
+    arn      = string
+    role_arn = string
+    input    = optional(string, "{}")
+  })
 }
 
-variable "target_role_arn" {
-  description = "IAM Role ARN for the target"
-  type        = string
+variable "flexible_time_window" {
+  description = "Configuration for flexible time window"
+  type = object({
+    mode                      = string # "OFF" or "FLEXIBLE"
+    maximum_window_in_minutes = optional(number)
+  })
+  default = {
+    mode = "OFF"
+  }
 }
 
-variable "input" {
-  description = "JSON input for the target"
-  type        = string
-  default     = "{}"
+variable "tags" {
+  description = "Tags to assign to resources"
+  type        = map(string)
+  default     = {}
 }

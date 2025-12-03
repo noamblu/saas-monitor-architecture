@@ -16,82 +16,62 @@ variable "saas_name" {
   default     = "noam-saas"
 }
 
-# --- Authentication Configuration ---
-
-variable "auth_type" {
-  description = "Authentication type: API_KEY, BASIC, OAUTH, or NONE"
-  type        = string
-  default     = "API_KEY"
-  validation {
-    condition     = contains(["API_KEY", "BASIC", "OAUTH", "NONE"], var.auth_type)
-    error_message = "auth_type must be one of: API_KEY, BASIC, OAUTH, NONE."
-  }
-}
-
-variable "api_key_config" {
-  description = "Configuration for API_KEY auth"
+variable "auth_config" {
+  description = "Authentication configuration"
   type = object({
-    key   = string
-    value = string
-  })
-  default = {
-    key   = "x-api-secret"
-    value = "super-secret-api-key-123"
-  }
-  sensitive = true
-}
-
-variable "basic_auth_config" {
-  description = "Configuration for BASIC auth"
-  type = object({
-    username = string
-    password = string
-  })
-  default   = null
-  sensitive = true
-}
-
-variable "oauth_config" {
-  description = "Configuration for OAUTH auth"
-  type = object({
-    authorization_endpoint = string
-    http_method            = string
-    client_parameters = object({
-      client_id     = string
-      client_secret = string
-    })
-    oauth_http_parameters = optional(object({
-      header       = optional(list(object({ key = string, value = string, is_value_secret = optional(bool, false) })))
-      body         = optional(list(object({ key = string, value = string, is_value_secret = optional(bool, false) })))
-      query_string = optional(list(object({ key = string, value = string, is_value_secret = optional(bool, false) })))
+    mode = string # API_KEY, BASIC, OAUTH, NONE
+    api_key = optional(object({
+      key   = string
+      value = string
+    }))
+    basic = optional(object({
+      username = string
+      password = string
+    }))
+    oauth = optional(object({
+      authorization_endpoint = string
+      http_method            = string
+      client_parameters = object({
+        client_id     = string
+        client_secret = string
+      })
+      oauth_http_parameters = optional(object({
+        header       = optional(list(object({ key = string, value = string, is_value_secret = optional(bool, false) })))
+        body         = optional(list(object({ key = string, value = string, is_value_secret = optional(bool, false) })))
+        query_string = optional(list(object({ key = string, value = string, is_value_secret = optional(bool, false) })))
+      }))
     }))
   })
-  default   = null
-  sensitive = true
+  default = {
+    mode = "API_KEY"
+    api_key = {
+      key   = "x-api-secret"
+      value = "super-secret-api-key-123"
+    }
+  }
 }
-
-# --- Processor Configuration ---
 
 variable "target_url" {
   description = "The URL of the SaaS API to monitor"
   type        = string
-  default     = "https://api.example.com/health" # Placeholder
+  default     = "https://api.example.com/health"
 }
 
-variable "event_bus_name" {
-  description = "Name of the external EventBridge Bus to send events to"
+variable "ops_main_events_bus_name" {
+  description = "Name of the central operational-main-events-bus"
   type        = string
-  default     = "ops-main-cust-bus"
+  default     = "operational-main-events-bus"
 }
 
-# --- VPC Configuration ---
-
-variable "vpc_id" {
-  description = "ID of the VPC to use"
+variable "api_destination_name" {
+  description = "Name of the API Destination (optional, defaults to saas_name)"
   type        = string
+  default     = null
 }
 
-variable "private_subnet_ids" {
-  description = "List of private subnet IDs for Lambda and other resources"
-  type        = list(string)
+variable "connection_name" {
+  description = "Name of the Connection (optional, defaults to saas_name)"
+  type        = string
+  default     = null
 }
+

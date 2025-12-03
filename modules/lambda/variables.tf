@@ -3,16 +3,16 @@ variable "name" {
   type        = string
 }
 
-variable "source_file" {
-  description = "Path to the source file (mutually exclusive with source_dir)"
-  type        = string
-  default     = null
-}
-
-variable "source_dir" {
-  description = "Path to the source directory (mutually exclusive with source_file)"
-  type        = string
-  default     = null
+variable "source_config" {
+  description = "Configuration for source code (file or directory)"
+  type = object({
+    path = string
+    type = string # "file" or "dir"
+  })
+  validation {
+    condition     = contains(["file", "dir"], var.source_config.type)
+    error_message = "source_config.type must be 'file' or 'dir'."
+  }
 }
 
 variable "handler" {
@@ -44,15 +44,17 @@ variable "additional_policies" {
   default     = []
 }
 
-variable "subnet_ids" {
-  description = "List of subnet IDs for VPC configuration"
-  type        = list(string)
-  default     = []
+variable "vpc_config" {
+  description = "VPC configuration for the Lambda"
+  type = object({
+    subnet_ids         = list(string)
+    security_group_ids = list(string)
+  })
+  default = null
 }
 
-variable "security_group_ids" {
-  description = "List of security group IDs for VPC configuration"
-  type        = list(string)
-  default     = []
+variable "tags" {
+  description = "Tags to assign to resources"
+  type        = map(string)
+  default     = {}
 }
-

@@ -2,6 +2,8 @@ import os
 import json
 import boto3
 import requests
+import time
+from datetime import datetime, timezone
 
 def handler(event, context):
     # Initialize clients
@@ -10,6 +12,7 @@ def handler(event, context):
     api_destination_name = os.environ['API_DESTINATION_NAME']
     connection_name = os.environ['CONNECTION_NAME']
     event_bus_name = os.environ['EVENT_BUS_NAME']
+    saas_name = os.environ['SAAS_NAME']
     
     # 1. Get API Destination details
     api_dest = eb_client.describe_api_destination(Name=api_destination_name)
@@ -36,8 +39,6 @@ def handler(event, context):
         http_method = oauth_params['HttpMethod']
         
         # Fetch OAuth Token (Standard Client Credentials Flow)
-        # We assume the provider accepts Basic Auth for client_id:client_secret
-        # and grant_type=client_credentials in the body.
         token_response = requests.request(
             method=http_method,
             url=auth_endpoint,
@@ -51,38 +52,47 @@ def handler(event, context):
     elif auth_type == 'NONE':
         pass
     
-    # 3. Invoke the API
-    response = requests.get(endpoint, headers=headers)
-    response.raise_for_status()
+    # 4. Invoke the API and measure latency
+    start_time = time.time()
+    status = "ERROR"
+    raw_response = {}
     
-    data = response.json()
+    try:
+        response = requests.get(endpoint, headers=headers)
+        response.raise_for_status()
+        status = "OK"
+        try:
+            raw_response = response.json()
+        except ValueError:
+            raw_response = {"text": response.text}
+            
+    except Exception as e:
+        status = "ERROR"
+        raw_response = {"error": str(e)}
+        # We don't raise here, we want to publish the failure event
+        
+    latency_ms = (time.time() - start_time) * 1000
     
-    # 4. Split response into individual events
-    entries = []
-    if isinstance(data, list):
-        for item in data:
-            entries.append({
-                "Source": "com.saas.monitor",
-                "DetailType": "ApiItem",
-                "Detail": json.dumps(item),
-                "EventBusName": event_bus_name
-            })
-    else:
-        # If response is a single object, wrap it
-        entries.append({
-            "Source": "com.saas.monitor",
-            "DetailType": "ApiItem",
-            "Detail": json.dumps(data),
-            "EventBusName": event_bus_name
-        })
+    # 5. Construct Event
+    detail = {
+        "saasName": saas_name,
+        "status": status,
+        "latencyMs": latency_ms,
+        "checkedAt": datetime.now(timezone.utc).isoformat(),
+        "rawResponse": raw_response
+    }
     
-    # 5. Publish events to EventBridge
-    # Batch in chunks of 10 (EventBridge limit)
-    for i in range(0, len(entries), 10):
-        batch = entries[i:i+10]
-        eb_client.put_events(Entries=batch)
+    entry = {
+        "Source": f"saas.{saas_name}",
+        "DetailType": "SaaSHealthCheckResult",
+        "Detail": json.dumps(detail),
+        "EventBusName": event_bus_name
+    }
+    
+    # 6. Publish event to EventBridge
+    eb_client.put_events(Entries=[entry])
     
     return {
         "statusCode": 200,
-        "body": f"Published {len(entries)} events to {event_bus_name}"
+        "body": f"Published health check for {saas_name}: {status}"
     }

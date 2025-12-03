@@ -1,82 +1,70 @@
 name: SaaS-Monitor-Architecture
-version: 1.1.0
+version: 1.2.0
 description: >-
-  A modular SaaS monitoring architecture using AWS EventBridge Pipes, Scheduler,
-  Lambda, and SQS. It triggers a mock SaaS API check on a schedule, processes
-  the response using a user-provided receiver (Lambda).
+  A modular SaaS monitoring architecture using AWS EventBridge Scheduler, Lambda,
+  and EventBridge Bus. It triggers a SaaS Poller Lambda on a schedule, which
+  fetches data from a SaaS API and publishes events to a dedicated SaaS Event Bus,
+  forwarding them to a central operations bus.
 
 inputs:
   aws_region:
     type: string
-  api_key_config:
+    default: "eu-central-1"
+  aws_profile:
+    type: string
+    default: "sandbox"
+  saas_name:
+    type: string
+    default: "noam-saas"
+  target_url:
+    type: string
+    default: "https://api.example.com/health"
+  ops_main_events_bus_name:
+    type: string
+    default: "operational-main-events-bus"
+  auth_config:
     type: object
     description: |
-      Configuration for API_KEY auth.
+      Authentication configuration.
       Fields:
-        - key: (string) The API key header name
-name: SaaS-Monitor-Architecture
-version: 1.1.0
-description: >-
-  A modular SaaS monitoring architecture using AWS EventBridge Pipes, Scheduler,
-  Lambda, and SQS. It triggers a mock SaaS API check on a schedule, processes
-  the response using a user-provided receiver (Lambda).
-
-inputs:
-  oauth_config:
-    type: object
-    sensitive: true
+        - mode: (string) API_KEY, BASIC, OAUTH, NONE
+        - api_key: (object) { key, value }
+        - basic: (object) { username, password }
+        - oauth: (object) { authorization_endpoint, http_method, client_parameters, oauth_http_parameters }
+  api_destination_name:
+    type: string
+    description: "Name of the API Destination (optional)"
+  connection_name:
+    type: string
+    description: "Name of the Connection (optional)"
 
 architecture:
   modules:
-    - name: saas_poller_lambda
-      type: lambda
-      description: "Lambda that polls data from SaaS API and puts events to EventBridge"
-    - name: monitor_schedule
-name: SaaS-Monitor-Architecture
-version: 1.1.0
-description: >-
-  A modular SaaS monitoring architecture using AWS EventBridge Pipes, Scheduler,
-  Lambda, and SQS. It triggers a mock SaaS API check on a schedule, processes
-  the response using a user-provided receiver (Lambda).
-
-inputs:
-  aws_region:
-    type: string
-  api_key_config:
-    type: object
-    description: |
-      Configuration for API_KEY auth.
-      Fields:
-        - key: (string) The API key header name
-  oauth_config:
-    type: object
-    sensitive: true
-  vpc_id:
-    type: string
-    description: "ID of the VPC to use"
-  private_subnet_ids:
-    type: list(string)
-    description: "List of private subnet IDs for Lambda"
-
-architecture:
-  modules:
+    - name: security_group
+      type: security-group
+      description: "Security Group for Lambda functions"
+    - name: api_destination
+      type: api-destination
+      description: "API Destination and Connection for SaaS API"
+    - name: event_bus
+      type: event-bridge-bus
+      description: "Dedicated SaaS Event Bus with forwarding rules"
+    - name: schema_registry
+      type: schema-registry
+      description: "EventBridge Schema Registry and Schemas"
     - name: saas_poller_lambda
       type: lambda
       description: "Lambda that polls data from SaaS API and puts events to EventBridge"
     - name: monitor_schedule
       type: scheduler
       description: "EventBridge Scheduler to trigger the poller"
-    - name: api_destination
-      type: api-destination
-      description: "API Destination and Connection for SaaS API"
-    - name: mock_saas_lambda
-      type: lambda
-      description: "Mock SaaS API (for testing)"
 
 outputs:
   saas_poller_lambda_arn:
     description: "ARN of the SaaS Poller Lambda"
   api_destination_arn:
     description: "ARN of the API Destination"
-  mock_saas_url:
-    description: "URL of the Mock SaaS API"
+  saas_event_bus_arn:
+    description: "ARN of the dedicated SaaS Event Bus"
+  lambda_security_group_id:
+    description: "The ID of the Security Group created for Lambda functions"
