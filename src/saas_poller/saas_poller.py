@@ -59,7 +59,10 @@ def handler(event, context):
             body_params = http_params.get('BodyParameters', [])
             
             for param in body_params:
-                data[param['Key']] = param['Value']
+                key = param.get('Key') or param.get('key')
+                value = param.get('Value') or param.get('value')
+                if key and value:
+                    data[key] = value
             
             # Fetch OAuth Token (Standard Client Credentials Flow)
             token_response = requests.request(
