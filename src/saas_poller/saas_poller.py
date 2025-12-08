@@ -39,24 +39,34 @@ def handler(event, context):
         auth_secret = os.environ.get('AUTH_SECRET')
 
         headers = {}
-        if auth_type == 'API_KEY':
+        if 'API_KEY' in auth_type:
             api_key_params = connection['AuthParameters']['ApiKeyAuthParameters']
             headers[api_key_params['ApiKeyName']] = auth_secret
-        elif auth_type == 'BASIC':
+        elif 'BASIC' in auth_type:
             basic_params = connection['AuthParameters']['BasicAuthParameters']
             headers['Authorization'] = f"Basic {basic_params['Username']}:{auth_secret}"
-        elif auth_type == 'OAUTH':
+        elif 'OAUTH' in auth_type:
             oauth_params = connection['AuthParameters']['OAuthParameters']
             client_id = oauth_params['ClientParameters']['ClientID']
             auth_endpoint = oauth_params['AuthorizationEndpoint']
             http_method = oauth_params['HttpMethod']
+            
+            # Prepare data with standard grant_type
+            data = {'grant_type': 'client_credentials'}
+            
+            # Add additional body parameters if configured
+            http_params = oauth_params.get('OAuthHttpParameters', {})
+            body_params = http_params.get('BodyParameters', [])
+            
+            for param in body_params:
+                data[param['Key']] = param['Value']
             
             # Fetch OAuth Token (Standard Client Credentials Flow)
             token_response = requests.request(
                 method=http_method,
                 url=auth_endpoint,
                 auth=(client_id, auth_secret),
-                data={'grant_type': 'client_credentials'},
+                data=data,
                 verify=False # Disable SSL Verification
             )
             token_response.raise_for_status()
