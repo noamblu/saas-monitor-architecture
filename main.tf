@@ -34,7 +34,7 @@ module "event_bus" {
     description    = "Archive for ${var.saas_name} events"
     retention_days = 10
     event_pattern = jsonencode({
-      source = ["saas.${var.saas_name}"]
+      source = ["com.saas.monitor.${var.saas_name}"]
     })
   }
 
@@ -42,7 +42,7 @@ module "event_bus" {
     "${var.saas_name}-forward-to-ops" = {
       description = "Forward SaaS health check events to central Ops bus"
       event_pattern = jsonencode({
-        source      = ["saas.${var.saas_name}"]
+        source      = ["com.saas.monitor.${var.saas_name}"]
         detail-type = ["SaaSHealthCheckResult"]
       })
       targets = {
