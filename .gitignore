@@ -16,4 +16,12 @@ _backup/
 
 # IDE
 .vscode/
-.idea/
+
+# Lambda Dependencies
+src/saas_poller/bin/
+src/saas_poller/certifi/
+src/saas_poller/charset_normalizer/
+src/saas_poller/idna/
+src/saas_poller/requests/
+src/saas_poller/urllib3/
+src/saas_poller/*.dist-info/
