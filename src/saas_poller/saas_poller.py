@@ -4,12 +4,16 @@ import boto3
 import requests
 import time
 import logging
+import urllib3
 from datetime import datetime, timezone
 from response_processor import process_response
 
 # Configure Logging
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
+
+# Disable SSL Warnings
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 def handler(event, context):
     try:
@@ -52,65 +56,8 @@ def handler(event, context):
                 method=http_method,
                 url=auth_endpoint,
                 auth=(client_id, auth_secret),
-                data={'grant_type': 'client_credentials'}
-            )
-            token_response.raise_for_status()
-            access_token = token_response.json()['access_token']
-import os
-import json
-import boto3
-import requests
-import time
-import logging
-from datetime import datetime, timezone
-from response_processor import process_response
-
-# Configure Logging
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-
-def handler(event, context):
-    try:
-        # Initialize clients
-        eb_client = boto3.client('events')
-        
-        api_destination_name = os.environ['API_DESTINATION_NAME']
-        connection_name = os.environ['CONNECTION_NAME']
-        event_bus_name = os.environ['EVENT_BUS_NAME']
-        saas_name = os.environ['SAAS_NAME']
-        
-        logger.info(f"Starting poll for SaaS: {saas_name}")
-        
-        # 1. Get API Destination details
-        api_dest = eb_client.describe_api_destination(Name=api_destination_name)
-        endpoint = api_dest['InvocationEndpoint']
-        
-        # 2. Get Connection details for authentication
-        connection = eb_client.describe_connection(Name=connection_name)
-        auth_type = connection['AuthorizationType']
-        
-        # 3. Get Secret from Env (DescribeConnection does not return secrets)
-        auth_secret = os.environ.get('AUTH_SECRET')
-
-        headers = {}
-        if auth_type == 'API_KEY':
-            api_key_params = connection['AuthParameters']['ApiKeyAuthParameters']
-            headers[api_key_params['ApiKeyName']] = auth_secret
-        elif auth_type == 'BASIC':
-            basic_params = connection['AuthParameters']['BasicAuthParameters']
-            headers['Authorization'] = f"Basic {basic_params['Username']}:{auth_secret}"
-        elif auth_type == 'OAUTH':
-            oauth_params = connection['AuthParameters']['OAuthParameters']
-            client_id = oauth_params['ClientParameters']['ClientID']
-            auth_endpoint = oauth_params['AuthorizationEndpoint']
-            http_method = oauth_params['HttpMethod']
-            
-            # Fetch OAuth Token (Standard Client Credentials Flow)
-            token_response = requests.request(
-                method=http_method,
-                url=auth_endpoint,
-                auth=(client_id, auth_secret),
-                data={'grant_type': 'client_credentials'}
+                data={'grant_type': 'client_credentials'},
+                verify=False # Disable SSL Verification
             )
             token_response.raise_for_status()
             access_token = token_response.json()['access_token']
@@ -126,7 +73,7 @@ def handler(event, context):
         
         try:
             logger.info(f"Invoking endpoint: {endpoint}")
-            response = requests.get(endpoint, headers=headers)
+            response = requests.get(endpoint, headers=headers, verify=False) # Disable SSL Verification
             response.raise_for_status()
             status = "OK"
             logger.info("SaaS Health Check: OK")
