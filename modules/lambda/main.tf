@@ -53,6 +53,7 @@ resource "aws_lambda_function" "this" {
   source_code_hash = data.archive_file.zip.output_base64sha256
   runtime          = var.runtime
   tags             = var.tags
+  timeout          = var.timeout
 
   environment {
     variables = var.environment_variables

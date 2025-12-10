@@ -58,3 +58,9 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "timeout" {
+  description = "Timeout in seconds"
+  type        = number
+  default     = 3
+}

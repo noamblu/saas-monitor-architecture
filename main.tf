@@ -53,6 +53,9 @@ module "event_bus" {
       }
     }
   }
+
+  enable_logging = true
+  log_group_name = "/aws/events/${var.saas_name}-bus-logs"
 }
 
 # IAM Role for Event Bus to invoke target (kept here as it's specific glue, or could be in a generic IAM module)
@@ -117,9 +120,10 @@ module "schema_registry" {
 }
 
 module "saas_poller_lambda" {
-  source = "./modules/lambda"
-  name   = "${var.saas_name}-saas-poller"
-  tags   = var.tags
+  source  = "./modules/lambda"
+  name    = "${var.saas_name}-saas-poller"
+  tags    = var.tags
+  timeout = 10
 
   source_config = {
     type = "dir"

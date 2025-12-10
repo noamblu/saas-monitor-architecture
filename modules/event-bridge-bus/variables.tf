@@ -36,3 +36,15 @@ variable "archive" {
   })
   default = null
 }
+
+variable "enable_logging" {
+  description = "Whether to enable CloudWatch logging for all events"
+  type        = bool
+  default     = false
+}
+
+variable "log_group_name" {
+  description = "Name of the CloudWatch Log Group for event logging"
+  type        = string
+  default     = null
+}
