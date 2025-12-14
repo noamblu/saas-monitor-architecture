@@ -29,6 +29,11 @@ module "event_bus" {
   bus_name = "custom-${var.saas_name}-event-bus"
   tags     = var.tags
 
+  log_config = {
+    include_detail = true
+    log_type       = "INFO"
+  }
+
   archive = {
     name           = "${var.saas_name}-event-archive"
     description    = "Archive for ${var.saas_name} events"
@@ -53,9 +58,6 @@ module "event_bus" {
       }
     }
   }
-
-  enable_logging = true
-  log_group_name = "/aws/events/${var.saas_name}-bus-logs"
 }
 
 # IAM Role for Event Bus to invoke target (kept here as it's specific glue, or could be in a generic IAM module)

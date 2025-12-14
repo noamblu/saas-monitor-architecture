@@ -1,6 +1,29 @@
 resource "aws_cloudwatch_event_bus" "this" {
   name = var.bus_name
   tags = var.tags
+
+  dynamic "log_config" {
+    for_each = var.log_config != null ? [var.log_config] : []
+    content {
+      include_detail = log_config.value.include_detail
+      # Level mapping for safety, default to INFO if not specified or fallback
+      # Valid values: OFF, ERROR, INFO, TRACE
+      # We map user's log_type (LOG_TYPE) to valid levels for consistency
+      # Assuming user provides "INFO" -> "INFO", "ERROR" -> "ERROR", "TRACE" -> "TRACE"
+      # But aws_cloudwatch_log_delivery_source uses "INFO_LOGS" etc.
+      # User passes simple string in log_type.
+      level = log_config.value.log_type
+    }
+  }
+}
+
+resource "aws_cloudwatch_log_delivery_source" "this" {
+  count = var.log_config != null ? 1 : 0
+
+  name         = "EventBusSource-${var.bus_name}-${var.log_config.log_type}_LOGS"
+  log_type     = "${var.log_config.log_type}_LOGS"
+  resource_arn = aws_cloudwatch_event_bus.this.arn
+  tags         = var.tags
 }
 
 resource "aws_cloudwatch_event_rule" "this" {
@@ -60,37 +83,4 @@ resource "aws_cloudwatch_event_archive" "this" {
   event_source_arn = aws_cloudwatch_event_bus.this.arn
   retention_days   = var.archive.retention_days
   event_pattern    = var.archive.event_pattern
-}
-
-# --- Logging Configuration ---
-
-resource "aws_cloudwatch_log_group" "events" {
-  count = var.enable_logging ? 1 : 0
-
-  name              = var.log_group_name
-  retention_in_days = 30 # Default to 30 days
-  tags              = var.tags
-}
-
-resource "aws_cloudwatch_event_rule" "log_all" {
-  count = var.enable_logging ? 1 : 0
-
-  name           = "${var.bus_name}-log-all-events"
-  description    = "Capture all events for logging"
-  event_bus_name = aws_cloudwatch_event_bus.this.name
-  state          = "ENABLED"
-
-  event_pattern = jsonencode({
-    source = [{ "prefix" : "" }] # Match all events
-  })
-
-  tags = var.tags
-}
-
-resource "aws_cloudwatch_event_target" "log_target" {
-  count = var.enable_logging ? 1 : 0
-
-  rule           = aws_cloudwatch_event_rule.log_all[0].name
-  event_bus_name = aws_cloudwatch_event_bus.this.name
-  arn            = aws_cloudwatch_log_group.events[0].arn
 }
