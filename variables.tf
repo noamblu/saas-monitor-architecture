@@ -84,3 +84,9 @@ variable "tags" {
     Environment = "Sandbox"
   }
 }
+
+variable "lambda_layer_arn" {
+  description = "Existing Lambda Layer ARN. If provided, skipping layer creation."
+  type        = string
+  default     = null
+}

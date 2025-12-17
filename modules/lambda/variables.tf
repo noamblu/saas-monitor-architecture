@@ -64,3 +64,9 @@ variable "timeout" {
   type        = number
   default     = 3
 }
+
+variable "layers" {
+  description = "List of Lambda Layer ARNs (optional)"
+  type        = list(string)
+  default     = []
+}

@@ -54,6 +54,7 @@ resource "aws_lambda_function" "this" {
   runtime          = var.runtime
   tags             = var.tags
   timeout          = var.timeout
+  layers           = var.layers
 
   environment {
     variables = var.environment_variables
