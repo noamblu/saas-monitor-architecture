@@ -121,40 +121,6 @@ module "schema_registry" {
   }
 }
 
-# --- Lambda Layer (Dependencies) ---
-
-# 1. Install dependencies locally if no layer provided
-resource "null_resource" "pip_install" {
-  count = var.lambda_layer_arn == null ? 1 : 0
-
-  triggers = {
-    requirements_diff = filemd5("${path.module}/src/saas_poller/requirements.txt")
-  }
-
-  provisioner "local-exec" {
-    command = "pip install -r ${path.module}/src/saas_poller/requirements.txt -t ${path.module}/layer/python"
-  }
-}
-
-# 2. Archive the layer directory
-data "archive_file" "layer_zip" {
-  count       = var.lambda_layer_arn == null ? 1 : 0
-  type        = "zip"
-  source_dir  = "${path.module}/layer"
-  output_path = "${path.module}/layer.zip"
-  excludes    = ["__pycache__", "*.pyc"]
-
-  depends_on = [null_resource.pip_install]
-}
-
-# 3. Create Layer Version
-resource "aws_lambda_layer_version" "dependencies" {
-  count               = var.lambda_layer_arn == null ? 1 : 0
-  filename            = data.archive_file.layer_zip[0].output_path
-  layer_name          = "saas-monitor-dependencies-layer"
-  compatible_runtimes = ["python3.9", "python3.10", "python3.11", "python3.12"] # Broad compatibility
-  source_code_hash    = data.archive_file.layer_zip[0].output_base64sha256
-}
 
 module "saas_poller_lambda" {
   source  = "./modules/lambda"
@@ -162,14 +128,13 @@ module "saas_poller_lambda" {
   tags    = var.tags
   timeout = 10
 
-  # Logic: Use provided ARN if exists, else use created layer ARN
   layers = [
-    var.lambda_layer_arn != null ? var.lambda_layer_arn : aws_lambda_layer_version.dependencies[0].arn
+    data.aws_lambda_layer_version.dependencies.arn
   ]
 
   source_config = {
-    type = "dir"
-    path = "${path.module}/src/saas_poller"
+    type = "file"
+    path = "${path.module}/src/saas_poller/saas_poller.py"
   }
 
   handler = "saas_poller.handler"

@@ -85,8 +85,8 @@ variable "tags" {
   }
 }
 
-variable "lambda_layer_arn" {
-  description = "Existing Lambda Layer ARN. If provided, skipping layer creation."
+variable "lambda_layer_name" {
+  description = "Name of the existing Lambda Layer to use."
   type        = string
-  default     = null
+  default     = "saas-monitor-dependencies-layer"
 }

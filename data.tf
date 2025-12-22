@@ -17,3 +17,7 @@ data "aws_cloudwatch_event_bus" "ops_main_bus" {
 }
 
 data "aws_caller_identity" "current" {}
+
+data "aws_lambda_layer_version" "dependencies" {
+  layer_name = var.lambda_layer_name
+}
