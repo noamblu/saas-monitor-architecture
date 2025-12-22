@@ -90,3 +90,9 @@ variable "lambda_layer_name" {
   type        = string
   default     = "saas-monitor-dependencies-layer"
 }
+
+variable "schema_registry_name" {
+  description = "Name of the existing Schema Registry to use"
+  type        = string
+  default     = "saas-events-registry"
+}

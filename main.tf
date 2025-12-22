@@ -95,30 +95,25 @@ resource "aws_iam_role_policy_attachment" "event_bus_invoke_attach" {
   policy_arn = aws_iam_policy.event_bus_invoke_policy.arn
 }
 
-module "schema_registry" {
-  source        = "./modules/schema-registry"
-  registry_name = "${var.saas_name}-registry"
-  description   = "Registry for ${var.saas_name} events"
+resource "aws_schemas_schema" "model" {
+  name          = "saas-${var.saas_name}-event-schema"
+  registry_name = var.schema_registry_name
+  type          = "JSONSchemaDraft4"
+  description   = "Schema for ${var.saas_name} health check events"
   tags          = var.tags
 
-  schemas = {
-    "saas-${var.saas_name}-event-schema" = {
-      description = "Schema for ${var.saas_name} health check events"
-      type        = "JSONSchemaDraft4"
-      content = jsonencode({
-        "$schema" = "http://json-schema.org/draft-04/schema#"
-        "type"    = "object"
-        "properties" = {
-          "saasName"    = { "type" = "string" }
-          "status"      = { "type" = "string" }
-          "latencyMs"   = { "type" = "number" }
-          "checkedAt"   = { "type" = "string", "format" = "date-time" }
-          "rawResponse" = { "type" = "object" }
-        }
-        "required" = ["saasName", "status", "checkedAt"]
-      })
+  content = jsonencode({
+    "$schema" = "http://json-schema.org/draft-04/schema#"
+    "type"    = "object"
+    "properties" = {
+      "saasName"    = { "type" = "string" }
+      "status"      = { "type" = "string" }
+      "latencyMs"   = { "type" = "number" }
+      "checkedAt"   = { "type" = "string", "format" = "date-time" }
+      "rawResponse" = { "type" = "object" }
     }
-  }
+    "required" = ["saasName", "status", "checkedAt"]
+  })
 }
 
 
