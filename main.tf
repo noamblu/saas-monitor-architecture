@@ -30,7 +30,7 @@ module "event_bus" {
   tags     = var.tags
 
   log_config = {
-    include_detail = true
+    include_detail = "FULL"
     log_type       = "INFO"
   }
 
@@ -99,7 +99,7 @@ resource "aws_schemas_schema" "model" {
   name          = "saas-${var.saas_name}-event-schema"
   registry_name = var.schema_registry_name
   type          = "JSONSchemaDraft4"
-  description   = "Schema for ${var.saas_name} health check events"
+  description   = "Schema for ${var.saas_name} events"
   tags          = var.tags
 
   content = jsonencode({

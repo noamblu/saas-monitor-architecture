@@ -23,7 +23,6 @@ resource "aws_cloudwatch_log_delivery_source" "this" {
   name         = "EventBusSource-${var.bus_name}-${var.log_config.log_type}_LOGS"
   log_type     = "${var.log_config.log_type}_LOGS"
   resource_arn = aws_cloudwatch_event_bus.this.arn
-  tags         = var.tags
 }
 
 resource "aws_cloudwatch_event_rule" "this" {

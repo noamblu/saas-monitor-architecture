@@ -40,7 +40,7 @@ variable "archive" {
 variable "log_config" {
   description = "Logging configuration for the EventBridge Bus"
   type = object({
-    include_detail = bool
+    include_detail = string # FULL or NONE
     log_type       = string # ERROR, INFO, or TRACE (maps to level in bus config)
   })
   default = null
