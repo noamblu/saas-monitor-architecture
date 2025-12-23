@@ -15,18 +15,34 @@ logger.setLevel(logging.INFO)
 # Disable SSL Warnings
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-def get_auth_headers(connection, auth_secret):
+def get_secret(secret_arn):
+    """Retrieves the secret value from AWS Secrets Manager."""
+    client = boto3.client('secretsmanager')
+    response = client.get_secret_value(SecretId=secret_arn)
+    if 'SecretString' in response:
+        return json.loads(response['SecretString'])
+    return {}
+
+def get_auth_headers(connection, secret_data):
     """Generates authentication headers based on the connection type."""
     headers = {}
     auth_type = connection['AuthorizationType']
     
     if 'API_KEY' in auth_type:
         api_key_params = connection['AuthParameters']['ApiKeyAuthParameters']
-        headers[api_key_params['ApiKeyName']] = auth_secret
+        api_key_name = api_key_params['ApiKeyName']
+        # Secret keys for API Key are typically 'ApiKeyValue'
+        auth_secret = secret_data.get('ApiKeyValue')
+        if auth_secret:
+            headers[api_key_name] = auth_secret
         
     elif 'BASIC' in auth_type:
         basic_params = connection['AuthParameters']['BasicAuthParameters']
-        headers['Authorization'] = f"Basic {basic_params['Username']}:{auth_secret}"
+        username = basic_params['Username']
+        # Secret keys for Basic Auth are typically 'Password'
+        password = secret_data.get('Password')
+        if password:
+            headers['Authorization'] = f"Basic {username}:{password}"
         
     elif 'OAUTH' in auth_type:
         oauth_params = connection['AuthParameters']['OAuthParameters']
@@ -34,31 +50,35 @@ def get_auth_headers(connection, auth_secret):
         auth_endpoint = oauth_params['AuthorizationEndpoint']
         http_method = oauth_params['HttpMethod']
         
-        # Prepare data with standard grant_type
-        data = {'grant_type': 'client_credentials'}
-        
-        # Add additional body parameters if configured
-        http_params = oauth_params.get('OAuthHttpParameters', {})
-        body_params = http_params.get('BodyParameters', [])
-        
-        for param in body_params:
-            key = param.get('Key') or param.get('key')
-            value = param.get('Value') or param.get('value')
-            if key and value:
-                data[key] = value
-        
-        # Fetch OAuth Token (Standard Client Credentials Flow)
-        token_response = requests.request(
-            method=http_method,
-            url=auth_endpoint,
-            auth=(client_id, auth_secret),
-            data=data,
-            verify=False # Disable SSL Verification
-        )
-        token_response.raise_for_status()
-        access_token = token_response.json()['access_token']
-        
-        headers['Authorization'] = f"Bearer {access_token}"
+        # Secret keys for OAuth are typically 'ClientSecret'
+        client_secret = secret_data.get('ClientSecret')
+
+        if client_secret:
+            # Prepare data with standard grant_type
+            data = {'grant_type': 'client_credentials'}
+            
+            # Add additional body parameters if configured
+            http_params = oauth_params.get('OAuthHttpParameters', {})
+            body_params = http_params.get('BodyParameters', [])
+            
+            for param in body_params:
+                key = param.get('Key') or param.get('key')
+                value = param.get('Value') or param.get('value')
+                if key and value:
+                    data[key] = value
+            
+            # Fetch OAuth Token (Standard Client Credentials Flow)
+            token_response = requests.request(
+                method=http_method,
+                url=auth_endpoint,
+                auth=(client_id, client_secret),
+                data=data,
+                verify=False # Disable SSL Verification
+            )
+            token_response.raise_for_status()
+            access_token = token_response.json()['access_token']
+            
+            headers['Authorization'] = f"Bearer {access_token}"
         
     elif auth_type == 'NONE':
         pass
@@ -137,6 +157,7 @@ def handler(event, context):
         connection_name = os.environ['CONNECTION_NAME']
         event_bus_name = os.environ['EVENT_BUS_NAME']
         saas_name = os.environ['SAAS_NAME']
+        connection_secret_arn = os.environ['CONNECTION_SECRET_ARN']
         
         logger.info(f"Starting poll for SaaS: {saas_name}")
         
@@ -146,10 +167,10 @@ def handler(event, context):
         connection = eb_client.describe_connection(Name=connection_name)
         
         # 2. Get Secret
-        auth_secret = os.environ.get('AUTH_SECRET')
+        secret_data = get_secret(connection_secret_arn)
         
         # 3. Get Auth Headers
-        headers = get_auth_headers(connection, auth_secret)
+        headers = get_auth_headers(connection, secret_data)
         
         # 4. Invoke API
         status, latency_ms, processed_items = invoke_api(endpoint, headers)

@@ -13,3 +13,7 @@ output "name" {
 output "connection_name" {
   value = aws_cloudwatch_event_connection.this.name
 }
+
+output "connection_secret_arn" {
+  value = aws_cloudwatch_event_connection.this.secret_arn
+}

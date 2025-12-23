@@ -100,9 +100,7 @@ resource "aws_schemas_schema" "model" {
   registry_name = var.schema_registry_name
   type          = "JSONSchemaDraft4"
   description   = "Schema for ${var.saas_name} events"
-  tags          = var.tags
-
-  content = jsonencode(var.schema_definition)
+  content       = jsonencode(var.schema_definition)
 }
 
 
@@ -129,14 +127,25 @@ module "saas_poller_lambda" {
   }
 
   environment_variables = {
-    API_DESTINATION_NAME = module.api_destination.name
-    CONNECTION_NAME      = module.api_destination.connection_name
-    EVENT_BUS_NAME       = module.event_bus.bus_name
-    SAAS_NAME            = var.saas_name
-    AUTH_SECRET          = var.auth_config.mode == "API_KEY" ? var.auth_config.api_key.value : (var.auth_config.mode == "BASIC" ? var.auth_config.basic.password : (var.auth_config.mode == "OAUTH" ? var.auth_config.oauth.client_parameters.client_secret : ""))
+    API_DESTINATION_NAME  = module.api_destination.name
+    CONNECTION_NAME       = module.api_destination.connection_name
+    EVENT_BUS_NAME        = module.event_bus.bus_name
+    SAAS_NAME             = var.saas_name
+    CONNECTION_SECRET_ARN = module.api_destination.connection_secret_arn
   }
 
   additional_policies = [
+    aws_iam_policy.event_bus_invoke_policy.policy,
+    jsonencode({
+      Version = "2012-10-17"
+      Statement = [
+        {
+          Effect   = "Allow"
+          Action   = ["secretsmanager:GetSecretValue"]
+          Resource = module.api_destination.connection_secret_arn
+        }
+      ]
+    }),
     jsonencode({
       Version = "2012-10-17"
       Statement = [
