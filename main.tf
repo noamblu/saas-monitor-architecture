@@ -102,18 +102,7 @@ resource "aws_schemas_schema" "model" {
   description   = "Schema for ${var.saas_name} events"
   tags          = var.tags
 
-  content = jsonencode({
-    "$schema" = "http://json-schema.org/draft-04/schema#"
-    "type"    = "object"
-    "properties" = {
-      "saasName"    = { "type" = "string" }
-      "status"      = { "type" = "string" }
-      "latencyMs"   = { "type" = "number" }
-      "checkedAt"   = { "type" = "string", "format" = "date-time" }
-      "rawResponse" = { "type" = "object" }
-    }
-    "required" = ["saasName", "status", "checkedAt"]
-  })
+  content = jsonencode(var.schema_definition)
 }
 
 

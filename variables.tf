@@ -96,3 +96,20 @@ variable "schema_registry_name" {
   type        = string
   default     = "saas-events-registry"
 }
+
+variable "schema_definition" {
+  description = "The schema definition object (will be jsonencoded)"
+  type        = any
+  default = {
+    "$schema" = "http://json-schema.org/draft-04/schema#"
+    "type"    = "object"
+    "properties" = {
+      "saasName"    = { "type" = "string" }
+      "status"      = { "type" = "string" }
+      "latencyMs"   = { "type" = "number" }
+      "checkedAt"   = { "type" = "string", "format" = "date-time" }
+      "rawResponse" = { "type" = "object" }
+    }
+    "required" = ["saasName", "status", "checkedAt"]
+  }
+}
