@@ -128,8 +128,8 @@ module "saas_poller_lambda" {
   ]
 
   source_config = {
-    type = "file"
-    path = "${path.module}/src/saas_poller/saas_poller.py"
+    type = "dir"
+    path = "${path.module}/src/saas_poller"
   }
 
   handler = "saas_poller.handler"
