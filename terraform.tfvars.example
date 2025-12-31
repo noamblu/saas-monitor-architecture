@@ -1,0 +1,47 @@
+aws_region  = "eu-central-1"
+aws_profile = "sandbox"
+saas_name   = "noam-saas"
+
+auth_config = {
+  mode = "API_KEY" # Options: API_KEY, BASIC, OAUTH, NONE
+  api_key = {
+    key   = "x-api-secret"
+    value = "super-secret-api-key-123"
+  }
+  # Example for OAUTH:
+  # oauth = {
+  #   authorization_endpoint = "https://auth.example.com/token"
+  #   http_method            = "POST"
+  #   client_parameters = {
+  #     client_id     = "my-client-id"
+  #     client_secret = "my-client-secret"
+  #   }
+  # }
+}
+
+target_url                 = "https://api.example.com/health"
+ops_main_events_bus_name   = "operational-main-events-bus"
+lambda_layer_name          = "saas-monitor-dependencies-layer"
+schema_registry_name       = "saas-events-registry"
+
+# Optional: api_destination_name = "custom-api-dest-name"
+# Optional: connection_name      = "custom-connection-name"
+
+tags = {
+  Project     = "SaaS-Monitor"
+  ManagedBy   = "Terraform"
+  Environment = "Sandbox"
+}
+
+schema_definition = {
+  "$schema" = "http://json-schema.org/draft-04/schema#"
+  "type"    = "object"
+  "properties" = {
+    "saasName"    = { "type" = "string" }
+    "status"      = { "type" = "string" }
+    "latencyMs"   = { "type" = "number" }
+    "checkedAt"   = { "type" = "string", "format" = "date-time" }
+    "rawResponse" = { "type" = "object" }
+  }
+  "required" = ["saasName", "status", "checkedAt"]
+}
